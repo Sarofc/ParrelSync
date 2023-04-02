@@ -121,6 +121,24 @@ namespace ParrelSync
         }
 
         /// <summary>
+        /// Sync local packages Folder
+        /// </summary>
+        public static void SyncLocalPackages(string cloneProjectPath)
+        {
+            var sourceProject = ClonesManager.GetCurrentProject();
+            var cloneProject = new Project(cloneProjectPath);
+
+            if (EditorUtility.DisplayDialog("Sync Local Packages", $"Will delete Packages Folder:\n{cloneProject.packagesPath}", "yes", "no"))
+            {
+                FileUtil.DeleteFileOrDirectory(cloneProject.packagesPath);
+
+                Debug.Log("Sync Local Packages: " + cloneProject.libraryPath);
+                ClonesManager.CopyDirectoryWithProgressBar(sourceProject.packagesPath, cloneProject.packagesPath,
+                  "Sync Project Local Packages '" + sourceProject.name + "'. ");
+            }
+        }
+
+        /// <summary>
         /// Registers a clone by placing an identifying ".clone" file in its root directory.
         /// </summary>
         /// <param name="cloneProject"></param>
@@ -329,7 +347,7 @@ namespace ParrelSync
         {
             sourcePath = sourcePath.Replace(" ", "\\ ");
             destinationPath = destinationPath.Replace(" ", "\\ ");
-            var command = string.Format("ln -s {0} {1}", sourcePath, destinationPath);           
+            var command = string.Format("ln -s {0} {1}", sourcePath, destinationPath);
 
             Debug.Log("Linux Symlink " + command);
 
@@ -529,6 +547,13 @@ namespace ParrelSync
         private static void CopyDirectoryWithProgressBarRecursive(DirectoryInfo source, DirectoryInfo destination,
             ref long totalBytes, ref long copiedBytes, string progressBarPrefix = "")
         {
+            if (source.Name.StartsWith('.'))
+            {
+                Debug.Log($"Skip copy folder: {source.FullName}");
+
+                return;
+            }
+
             /// Directory cannot be copied into itself.
             if (source.FullName.ToLower() == destination.FullName.ToLower())
             {
